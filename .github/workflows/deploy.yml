@@ -1,0 +1,33 @@
+name: deploy to ghcr.io
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }} # This ensures all runs for a branch are grouped
+  cancel-in-progress: true # Cancels any in-progress runs for this group
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: setup docker buildx
+        uses: docker/setup-buildx-actions@v3
+      - name: login to ghcr 
+        uses: docker/login-actions@v3
+        with:
+          registry: ghcr.io 
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          # github.repository_owner and github.repository are hardcoded
+          tags: ghcr.io/aravindr2d2/git_container-reg:latest,ghcr.io/aravindr2d2/git_container_reg:${{ github.sha }}
